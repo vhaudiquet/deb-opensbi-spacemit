@@ -25,14 +25,10 @@
 #include <sbi_utils/cache/cache.h>
 #include <sbi_utils/cci/cci.h>
 
-/* Sv39 page-table walk constants */
+/* Sv39/Sv48 page-table walk constants (both use 9-bit VPN fields) */
 #define SATP64_MODE_SHIFT	60
-#define SV39_LEVELS		3
-#define SV39_VPN_BITS		9
-#define SV39_VPN_MASK		((1UL << SV39_VPN_BITS) - 1)
-#define SV39_VPN2_SHIFT		30
-#define SV39_VPN1_SHIFT		21
-#define SV39_VPN0_SHIFT		PAGE_SHIFT
+#define SV_VPN_BITS		9
+#define SV_VPN_MASK		((1UL << SV_VPN_BITS) - 1)
 #define PTE_V			(1UL << 0)	/* valid */
 #define PTE_RWX			(0xeUL)		/* leaf: R|W|X any set */
 #define PTE_PPN_SHIFT		10
@@ -255,24 +251,34 @@ static unsigned long s_addr_to_pa(unsigned long addr)
 {
 	unsigned long satp = csr_read(CSR_SATP);
 	unsigned long mode = (satp & SATP64_MODE) >> SATP64_MODE_SHIFT;
+	unsigned int levels, level;
+	unsigned long ppn, shift, vpn, pte, *ptep;
 
 	/* Bare mode: no translation, addr is already physical */
 	if (mode == SATP_MODE_OFF)
 		return addr;
 
-	if (mode != SATP_MODE_SV39)
+	/*
+	 * S-mode may run with either Sv39 (3 levels) or Sv48 (4 levels).
+	 * Both use 9-bit VPN fields and the same PTE layout; only the number
+	 * of page-table levels and the top-level shift differ. Walk from the
+	 * root level down to the leaf, which M-mode can read directly.
+	 */
+	if (mode == SATP_MODE_SV39)
+		levels = 3;
+	else if (mode == SATP_MODE_SV48)
+		levels = 4;
+	else
 		return 0;
 
-	unsigned long ppn = satp & SATP64_PPN;
-	unsigned long vpn[SV39_LEVELS] = {
-		(addr >> SV39_VPN2_SHIFT) & SV39_VPN_MASK,
-		(addr >> SV39_VPN1_SHIFT) & SV39_VPN_MASK,
-		(addr >> SV39_VPN0_SHIFT) & SV39_VPN_MASK,
-	};
+	ppn = satp & SATP64_PPN;
 
-	for (int i = 0; i < SV39_LEVELS; i++) {
-		unsigned long *ptep = (unsigned long *)((ppn << PAGE_SHIFT) + vpn[i] * sizeof(unsigned long));
-		unsigned long pte = *ptep;
+	for (level = levels; level-- > 0; ) {
+		shift = PAGE_SHIFT + SV_VPN_BITS * level;
+		vpn = (addr >> shift) & SV_VPN_MASK;
+		ptep = (unsigned long *)((ppn << PAGE_SHIFT) +
+					 vpn * sizeof(unsigned long));
+		pte = *ptep;
 
 		if (!(pte & PTE_V))
 			return 0; /* invalid PTE */
@@ -280,7 +286,7 @@ static unsigned long s_addr_to_pa(unsigned long addr)
 		ppn = (pte >> PTE_PPN_SHIFT) & SATP64_PPN;
 
 		if (pte & PTE_RWX) { /* leaf PTE: R|W|X set */
-			unsigned long pg_off_bits = PAGE_SHIFT + SV39_VPN_BITS * (2 - i);
+			unsigned long pg_off_bits = PAGE_SHIFT + SV_VPN_BITS * level;
 			unsigned long offset_mask = (1UL << pg_off_bits) - 1;
 			return (ppn << PAGE_SHIFT) | (addr & offset_mask);
 		}
