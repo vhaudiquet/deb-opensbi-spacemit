@@ -1,0 +1,5 @@
+opensbi-spacemit (1.0.5+fix1) resolute; urgency=medium
+
+  * fix: add device-tree-compiler to Build-Depends (LP buildd lacks dtc; mkimage FIT build failed)
+
+ -- weizhi.li <weizhi.li@spacemit.com>  Sat, 25 Jul 2026 22:30:45 +0800
