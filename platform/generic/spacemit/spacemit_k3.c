@@ -299,8 +299,14 @@ static unsigned long s_addr_to_pa(unsigned long addr)
  * S-mode accesses to these must NOT be emulated — return SBI_ENODEV so the
  * fault is redirected back to S-mode as a real access error.
  *
- * Covers: C0-C3 RVBADDR LO/HI, PMU_CAP_CORE*_WAKEUP,
- *         PMU_CAP_CORE*_IDLE_CFG, PMU_CX_CAPMP_IDLE_CFG*.
+ * The PMP granularity forces the whole 4 KiB page at 0xd4282000 to be
+ * M-mode-protected, which overlaps the upstream DT "syscon_apmu" node
+ * (0xd4282800, size 0x400). The clock/reset/power-domain driver behind that
+ * node legitimately needs the PMU_CAP_CORE*_{WAKEUP,IDLE_CFG} and
+ * PMU_CX_CAPMP_IDLE_CFG* registers, so those are emulated for S-mode rather
+ * than denied. Only the per-cluster reset-vector-base (RVBADDR) registers
+ * remain off-limits: they live in the upper 1 KiB of the page (outside the
+ * syscon_apmu window) and are genuinely M-mode-only.
  */
 struct addr_range {
 	unsigned long base;
@@ -312,13 +318,6 @@ static const struct addr_range m_only_ranges[] = {
 	{ C1_RVBADDR_LO_ADDR, 2 * sizeof(u32) },
 	{ C2_RVBADDR_LO_ADDR, 2 * sizeof(u32) },
 	{ C3_RVBADDR_LO_ADDR, 2 * sizeof(u32) },
-	{ PMU_CX_CAPMP_IDLE_CFG1,  sizeof(u32) },		/* CFG1 */
-	{ PMU_CX_CAPMP_IDLE_CFG0, 7 * sizeof(u32) },		/* CFG0, IDLE_CFG0/1, WAKEUP0-3 */
-	{ PMU_CX_CAPMP_IDLE_CFG2, 2 * sizeof(u32) },		/* CFG2/3 */
-	{ PMU_CAP_CORE2_IDLE_CFG, 2 * sizeof(u32) },		/* IDLE_CFG2/3 */
-	{ PMU_CAP_CORE12_IDLE_CFG, 12 * sizeof(u32) },		/* IDLE_CFG12-15, CX_CFG12-15, WAKEUP12-15 */
-	{ PMU_CAP_CORE4_IDLE_CFG,  12 * sizeof(u32) },		/* IDLE_CFG4-7, CX_CFG4-7, WAKEUP4-7 */
-	{ PMU_CAP_CORE8_IDLE_CFG,  12 * sizeof(u32) },		/* IDLE_CFG8-11, CX_CFG8-11, WAKEUP8-11 */
 };
 
 static bool pa_is_m_only(unsigned long pa, int len)
