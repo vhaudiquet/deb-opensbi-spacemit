@@ -1,3 +1,13 @@
+opensbi-spacemit (1.0.5+fix1-1) resolute; urgency=medium
+
+  * Support Sv48 in s_addr_to_pa page-table walk
+  * Allow S-mode access to syscon_apmu PMU registers
+  * Serialize emulated APMU MMIO accesses with a full I/O barrier
+  * d/s/postinst: fix Spacemit K3 detection
+  * d/rules: always set CROSS_COMPILE
+
+ -- Valentin Haudiquet <valentin.haudiquet@canonical.com>  Wed, 12 Aug 2026 17:36:52 +0200
+
 opensbi-spacemit (1.0.5+fix1) resolute; urgency=medium
 
   * fix: add device-tree-compiler to Build-Depends (LP buildd lacks dtc; mkimage FIT build failed)
