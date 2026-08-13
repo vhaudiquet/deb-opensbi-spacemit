@@ -7,6 +7,7 @@ Build-Depends: debhelper-compat (=13),
  python3:any,
  u-boot-tools,
  device-tree-compiler,
+ gcc-riscv64-linux-gnu,
 Standards-Version: 4.6.2
 Rules-Requires-Root: no
 Vcs-Browser: https://salsa.debian.org/opensbi-team/opensbi
