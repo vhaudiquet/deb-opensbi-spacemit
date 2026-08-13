@@ -1,3 +1,9 @@
+opensbi-spacemit (1.0.5+fix1-2) resolute; urgency=medium
+
+  * d/control: add gcc depends for cross-build
+
+ -- Valentin Haudiquet <valentin.haudiquet@canonical.com>  Thu, 13 Aug 2026 11:53:25 +0200
+
 opensbi-spacemit (1.0.5+fix1-1) resolute; urgency=medium
 
   * Support Sv48 in s_addr_to_pa page-table walk
