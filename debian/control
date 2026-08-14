@@ -18,7 +18,10 @@ XBS-Commit-Id: ${misc:CommitId}
 Package: opensbi-spacemit
 Architecture: all
 Multi-Arch: foreign
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends},
+ kmod,
 Description: RISC-V Open Source Supervisor Binary Interface
  An open-source reference implementation of the RISC-V SBI
  specifications for platform-specific firmwares executing in M-mode.
