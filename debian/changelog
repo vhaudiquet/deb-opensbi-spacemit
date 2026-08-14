@@ -1,3 +1,9 @@
+opensbi-spacemit (1.0.5+fix1-3) resolute; urgency=medium
+
+  * d/s/postinst: load mtdblock kernel module if not present
+
+ -- Valentin Haudiquet <valentin.haudiquet@canonical.com>  Fri, 14 Aug 2026 13:44:00 +0200
+
 opensbi-spacemit (1.0.5+fix1-2) resolute; urgency=medium
 
   * d/control: add gcc depends for cross-build
